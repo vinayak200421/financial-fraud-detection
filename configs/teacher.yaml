@@ -1,0 +1,41 @@
+task: train_teacher
+seed: 42
+
+device:
+  prefer_cuda: true
+
+artifacts:
+  root: artifacts
+  run_id: null
+
+data:
+  path: null
+  label_col: label
+  industry_col: industry
+  features: null
+
+  preprocess:
+    impute_strategy: median
+    scale: true
+
+  split:
+    test_size: 0.3
+    val_size_within_train: 0.1
+    seed: 42
+    stratify: true
+
+model:
+  d_model: 64
+  nhead: 6
+  num_layers: 2
+  dim_feedforward: 1024
+  dropout: 0.2
+  pooling: mean
+
+train:
+  lr: 0.001
+  batch_size: 32
+  epochs: 100
+  weight_decay: 0.0
+  max_train_batches: null
+  max_eval_batches: null

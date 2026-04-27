@@ -22,6 +22,7 @@ datasets/
 outputs/
 runs/
 checkpoints/
+artifacts/
 *.ckpt
 *.pth
 *.pt

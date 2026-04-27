@@ -580,6 +580,9 @@ pytest -q
 python -m scripts.train_teacher --help
 python -m scripts.train_student_kd --help
 python -m scripts.evaluate --help
+
+# 4) Smoke: data pipeline (requires data.path configured)
+python -m scripts.data_smoke --help
 ```
 
 As soon as lint/format/typecheck are added, they must be listed here.

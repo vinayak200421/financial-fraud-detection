@@ -1,0 +1,28 @@
+task: data_smoke
+seed: 42
+
+artifacts:
+  root: artifacts
+  run_id: null
+
+data:
+  # Set this to your TipDM CSV/Parquet path
+  path: null
+  label_col: label
+  industry_col: industry
+  # If null, we infer numeric columns (excluding label/industry) and sort them.
+  features: null
+
+  preprocess:
+    impute_strategy: median
+    scale: true
+
+  split:
+    test_size: 0.3
+    val_size_within_train: 0.1
+    seed: 42
+    stratify: true
+
+smoke:
+  batch_size: 8
+  num_batches: 2

@@ -1,0 +1,14 @@
+task: train_student_kd
+seed: 42
+
+device:
+  prefer_cuda: true
+
+artifacts:
+  root: artifacts
+  run_id: null
+
+distill:
+  temperature: 7
+  alpha: 0.5
+  beta: 0.5

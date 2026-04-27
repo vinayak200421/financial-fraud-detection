@@ -1,0 +1,6 @@
+task: evaluate
+seed: 42
+
+artifacts:
+  root: artifacts
+  run_id: null
