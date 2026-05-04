@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, set_access_cookies, unset_jwt_cookies, get_jwt_identity
 import torch
 from datetime import datetime
+from functools import wraps
 from models import db, User, Transaction
 from config import Config
 from model import load_fraud_model
@@ -14,6 +15,22 @@ jwt = JWTManager(app)
 
 import json
 import os
+
+def admin_required():
+    def wrapper(fn):
+        @wraps(fn)
+        @jwt_required()
+        def decorator(*args, **kwargs):
+            current_user_id = int(get_jwt_identity())
+            user = User.query.get(current_user_id)
+            if not user or not user.is_admin:
+                if request.path.startswith('/api/'):
+                    return jsonify({"error": "Admin access required"}), 403
+                return "Admin access required", 403
+            return fn(*args, **kwargs)
+        return decorator
+    return wrapper
+
 
 # Load global model and stats
 PURPOSE_MAP = {
@@ -188,11 +205,12 @@ def index():
     return render_template('index.html')
 
 @app.route('/admin', methods=['GET'])
+@admin_required()
 def admin_page():
     return render_template('admin.html')
 
 @app.route('/api/admin/transactions', methods=['GET'])
-@jwt_required(optional=True) # Making optional for easier local testing, but should be strictly required in prod
+@admin_required()
 def admin_transactions():
     txns = Transaction.query.order_by(Transaction.timestamp.desc()).limit(50).all()
     result = []
@@ -210,7 +228,7 @@ def admin_transactions():
     return jsonify(result), 200
 
 @app.route('/api/admin/reverse/<int:txn_id>', methods=['POST'])
-@jwt_required(optional=True)
+@admin_required()
 def reverse_transaction(txn_id):
     txn = Transaction.query.get(txn_id)
     if not txn:
@@ -246,7 +264,7 @@ def reverse_transaction(txn_id):
     return jsonify({"msg": "Transaction reversed", "compensating_txn_id": comp_txn.id}), 200
 
 @app.route('/api/admin/explain/<int:txn_id>', methods=['GET'])
-@jwt_required(optional=True)
+@admin_required()
 def explain_transaction(txn_id):
     txn = Transaction.query.get(txn_id)
     if not txn:

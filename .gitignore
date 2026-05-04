@@ -33,3 +33,11 @@ artifacts/
 # Papers / PDFs (avoid committing publisher PDFs by default)
 *.pdf
 
+venv/
+__pycache__/
+*.pyc
+bank.db
+model.pth
+teacher.pth
+stats.json
+.env
