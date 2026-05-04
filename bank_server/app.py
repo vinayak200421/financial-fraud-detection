@@ -226,6 +226,20 @@ def admin_transactions():
             "is_fraud": t.is_fraud
         })
     return jsonify(result), 200
+    
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required()
+def admin_users():
+    users = User.query.all()
+    result = []
+    for u in users:
+        result.append({
+            "id": u.id,
+            "username": u.username,
+            "balance": u.balance,
+            "is_admin": u.is_admin
+        })
+    return jsonify(result), 200
 
 @app.route('/api/admin/reverse/<int:txn_id>', methods=['POST'])
 @admin_required()

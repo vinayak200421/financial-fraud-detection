@@ -33,6 +33,7 @@
     <div id="dashboardSection" class="container hidden">
         <h2 id="welcomeMsg">Welcome</h2>
         <div class="profile">
+            <p>Account ID: <strong id="userId">...</strong></p>
             <p>Your Balance: <strong id="balance">$0.00</strong></p>
             <button onclick="logout()" style="background: #6c757d;">Logout</button>
         </div>
@@ -107,6 +108,7 @@
             const profile = await res.json();
             
             document.getElementById('welcomeMsg').innerText = "Welcome, " + profile.username;
+            document.getElementById('userId').innerText = profile.id;
             document.getElementById('balance').innerText = "$" + profile.balance.toFixed(2);
             if (profile.is_admin) {
                 document.getElementById('adminLink').classList.remove('hidden');

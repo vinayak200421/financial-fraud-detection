@@ -42,6 +42,21 @@
         </tbody>
     </table>
 
+    <h2>User Directory</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Username</th>
+                <th>Balance</th>
+                <th>Role</th>
+            </tr>
+        </thead>
+        <tbody id="userTable">
+            <!-- Rows populated by JS -->
+        </tbody>
+    </table>
+
     <script>
         async function fetchTransactions() {
             const res = await fetch('/api/admin/transactions');
@@ -80,6 +95,25 @@
                 });
             } else {
                 alert("Failed to load transactions.");
+            }
+        }
+
+        async function fetchUsers() {
+            const res = await fetch('/api/admin/users');
+            if (res.ok) {
+                const data = await res.json();
+                const tbody = document.getElementById('userTable');
+                tbody.innerHTML = '';
+                data.forEach(user => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>$${user.balance.toFixed(2)}</td>
+                            <td>${user.is_admin ? 'Admin' : 'User'}</td>
+                        </tr>
+                    `;
+                });
             }
         }
 
@@ -124,6 +158,7 @@
 
         // Initial load
         fetchTransactions();
+        fetchUsers();
     </script>
 </body>
 </html>
