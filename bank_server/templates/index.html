@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Server - User Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f7; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 400px; margin-top: 50px; }
+        h2 { text-align: center; color: #333; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .hidden { display: none; }
+        .profile { text-align: center; }
+        .alert { padding: 10px; border-radius: 6px; margin: 10px 0; text-align: center; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .alert-success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <div id="loginSection" class="container">
+        <h2 id="formTitle">Bank Login</h2>
+        <div id="loginError" class="alert alert-error hidden"></div>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button id="primaryBtn" onclick="login()">Login</button>
+        <p style="text-align: center; margin-top: 15px;">
+            <a href="#" id="toggleLink" onclick="toggleForm()">New here? Create an account</a>
+        </p>
+    </div>
+
+    <div id="dashboardSection" class="container hidden">
+        <h2 id="welcomeMsg">Welcome</h2>
+        <div class="profile">
+            <p>Your Balance: <strong id="balance">$0.00</strong></p>
+            <button onclick="logout()" style="background: #6c757d;">Logout</button>
+        </div>
+        <hr>
+        <h3>Make a Transfer</h3>
+        <div id="transferMsg" class="alert hidden"></div>
+        <input type="text" id="receiver" placeholder="Receiver Username">
+        <input type="number" id="amount" placeholder="Amount">
+        <input type="text" id="purpose" placeholder="Purpose">
+        <button onclick="transfer()">Send Money</button>
+        <br><br>
+        <a href="/admin" id="adminLink" class="hidden" style="display: block; text-align: center; color: #007bff;">Go to Admin Panel</a>
+    </div>
+
+    <script>
+        let isLogin = true;
+
+        function toggleForm() {
+            isLogin = !isLogin;
+            document.getElementById('formTitle').innerText = isLogin ? "Bank Login" : "Create Account";
+            document.getElementById('primaryBtn').innerText = isLogin ? "Login" : "Register";
+            document.getElementById('primaryBtn').setAttribute('onclick', isLogin ? "login()" : "register()");
+            document.getElementById('toggleLink').innerText = isLogin ? "New here? Create an account" : "Already have an account? Login";
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        async function register() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: user, password: pass})
+            });
+            const data = await res.json();
+            const msgBox = document.getElementById('loginError');
+            msgBox.classList.remove('hidden', 'alert-error', 'alert-success');
+            if (res.ok) {
+                msgBox.innerText = data.msg + ". You can now login.";
+                msgBox.classList.add('alert-success');
+                toggleForm();
+            } else {
+                msgBox.innerText = data.msg;
+                msgBox.classList.add('alert-error');
+            }
+        }
+
+        async function login() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: user, password: pass})
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showDashboard(data);
+            } else {
+                const err = document.getElementById('loginError');
+                err.innerText = data.msg || "Login failed";
+                err.classList.remove('hidden');
+            }
+        }
+
+        async function showDashboard(userData) {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            
+            // Get fresh profile data
+            const res = await fetch('/api/me');
+            const profile = await res.json();
+            
+            document.getElementById('welcomeMsg').innerText = "Welcome, " + profile.username;
+            document.getElementById('balance').innerText = "$" + profile.balance.toFixed(2);
+            if (profile.is_admin) {
+                document.getElementById('adminLink').classList.remove('hidden');
+            }
+        }
+
+        async function transfer() {
+            const receiver = document.getElementById('receiver').value;
+            const amount = document.getElementById('amount').value;
+            const purpose = document.getElementById('purpose').value;
+            const msgBox = document.getElementById('transferMsg');
+            
+            const res = await fetch('/api/transfer', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({receiver_username: receiver, amount: amount, purpose: purpose})
+            });
+            const data = await res.json();
+            
+            msgBox.classList.remove('hidden', 'alert-error', 'alert-success');
+            if (res.ok) {
+                msgBox.innerText = data.msg;
+                msgBox.classList.add(data.is_fraud ? 'alert-error' : 'alert-success');
+                showDashboard(); // Refresh balance
+            } else {
+                msgBox.innerText = data.error || "Transfer failed";
+                msgBox.classList.add('alert-error');
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', {method: 'POST'});
+            location.reload();
+        }
+
+        // Check if already logged in
+        window.onload = async () => {
+            const res = await fetch('/api/me');
+            if (res.ok) {
+                showDashboard();
+            }
+        };
+    </script>
+</body>
+</html>
