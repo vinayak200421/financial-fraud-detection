@@ -31,7 +31,7 @@ def _default_cfg() -> Dict[str, Any]:
             },
         },
         "model": {
-            "d_model": 64,
+            "d_model": 60,
             "nhead": 6,
             "num_layers": 2,
             "dim_feedforward": 1024,
@@ -139,7 +139,7 @@ def main() -> None:
     m = cfg["model"]
     model = TransformerFraudClassifier(
         num_features=len(built.feature_columns),
-        d_model=int(m.get("d_model", 64)),
+        d_model=int(m.get("d_model", 60)),
         nhead=int(m.get("nhead", 6)),
         num_layers=int(m.get("num_layers", 2)),
         dim_feedforward=int(m.get("dim_feedforward", 1024)),

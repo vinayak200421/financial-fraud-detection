@@ -25,7 +25,7 @@ data:
     stratify: true
 
 model:
-  d_model: 64
+  d_model: 60
   nhead: 6
   num_layers: 2
   dim_feedforward: 1024
