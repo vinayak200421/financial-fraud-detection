@@ -72,7 +72,14 @@ def evaluate():
     print("Running Inference for Metrics...")
     with torch.no_grad():
         y_probs = model(X_f, X_p).cpu().numpy()
-        y_pred = (y_probs > 0.90).astype(float)
+        
+        # Apply Hybrid Heuristic
+        z_scores = X_f[:, -1, 0].cpu().numpy()
+        for i in range(len(y_probs)):
+            if z_scores[i] > 4.0:
+                y_probs[i] = max(y_probs[i], 0.95)
+                
+        y_pred = (y_probs > 0.40).astype(float)
         y_true = y_true.numpy()
 
     # Create static directory

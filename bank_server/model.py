@@ -75,7 +75,8 @@ class SequenceTransformer(nn.Module):
             # We'll use the last layer's attention for visualization
             # In a real IEEE paper, we might use Integrated Gradients or Attention Rollout.
             # Use normalized cosine similarity to avoid NaN on extreme outliers (Whale attacks)
-            x_norm = F.normalize(x, p=2, dim=-1)
+            # Including explicit epsilon (1e-8) for denominator numerical stability
+            x_norm = F.normalize(x, p=2, dim=-1, eps=1e-8)
             attn_weights = torch.softmax(torch.matmul(x_norm, x_norm.transpose(-2, -1)) / 0.1, dim=-1)
             
             x = self.transformer_encoder(x)
