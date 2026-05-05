@@ -15,6 +15,7 @@ jwt = JWTManager(app)
 
 import json
 import os
+import numpy as np
 
 def admin_required():
     def wrapper(fn):
@@ -169,7 +170,7 @@ def transfer():
     if current_z_score > 4.0:
         fraud_prob = max(fraud_prob, 0.95)
         
-    is_fraud = fraud_prob > 0.40
+    is_fraud = fraud_prob > 0.25
     
     # 4. Create Transaction
     new_txn = Transaction(
@@ -296,6 +297,7 @@ def explain_transaction(txn_id):
     items = last_txns + [txn]
     for item in items:
         dt = (item.timestamp - prev_time).total_seconds() if prev_time else 0.0
+        dt = float(np.log1p(dt))  # Log-Temporal Encoding: compress scale for velocity burst detection
         prev_time = item.timestamp
         z_amt = (item.amount - stats['mean']) / (stats['std'] + 1e-6)
         feat_seq.append([z_amt, item.timestamp.hour, item.timestamp.minute, item.timestamp.weekday(), dt])

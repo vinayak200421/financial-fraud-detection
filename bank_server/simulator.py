@@ -45,12 +45,13 @@ if __name__ == "__main__":
     parser.add_argument("--burst_count", type=int, default=7, help="Number of transactions for velocity strategy")
     args = parser.parse_args()
 
-    # Login as user_1
-    cookies = login_and_get_token("user_1", "pass123")
+    # Login as admin for whale (needs high balance), user_1 for velocity
+    whale_cookies = login_and_get_token("admin", "adminpass")
+    velocity_cookies = login_and_get_token("user_1", "pass123")
+    cookies = velocity_cookies  # default for backward compat
     
-    if cookies:
-        if args.strategy in ["whale", "both"]:
-            trigger_whale(cookies, args.target_user)
-        
-        if args.strategy in ["velocity", "both"]:
-            trigger_velocity(cookies, args.target_user, args.burst_count)
+    if whale_cookies and args.strategy in ["whale", "both"]:
+        trigger_whale(whale_cookies, args.target_user)
+    
+    if velocity_cookies and args.strategy in ["velocity", "both"]:
+        trigger_velocity(velocity_cookies, args.target_user, args.burst_count)

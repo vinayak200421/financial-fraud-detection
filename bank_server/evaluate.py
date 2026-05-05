@@ -38,8 +38,10 @@ def build_test_data(stats):
         items = history + [txn]
         for item in items:
             dt = (item.timestamp - prev_time).total_seconds() if prev_time else 0.0
+            dt = float(np.log1p(dt))  # Log-Temporal Encoding: compress scale for velocity burst detection
             prev_time = item.timestamp
             z_amt = (item.amount - stats['mean']) / (stats['std'] + 1e-6)
+            z_amt = max(min(z_amt, 10.0), -10.0)
             feat_seq.append([z_amt, item.timestamp.hour, item.timestamp.minute, item.timestamp.weekday(), dt])
             purp_seq.append(PURPOSE_MAP.get(item.purpose, 9))
             
@@ -79,7 +81,7 @@ def evaluate():
             if z_scores[i] > 4.0:
                 y_probs[i] = max(y_probs[i], 0.95)
                 
-        y_pred = (y_probs > 0.40).astype(float)
+        y_pred = (y_probs > 0.25).astype(float)
         y_true = y_true.numpy()
 
     # Create static directory
@@ -103,16 +105,61 @@ def evaluate():
     plt.savefig('static/confusion_matrix.png')
     print("Saved: static/confusion_matrix.png")
 
+    precision_val = precision_score(y_true, y_pred)
+    recall_val    = recall_score(y_true, y_pred)
+    f1_val        = f1_score(y_true, y_pred)
+    acc_val       = accuracy_score(y_true, y_pred)
+
     # 2. Precision-Recall Curve
-    precision, recall, _ = precision_recall_curve(y_true, y_probs)
+    precision_curve, recall_curve, _ = precision_recall_curve(y_true, y_probs)
+    auc_pr = np.trapezoid(precision_curve[::-1], recall_curve[::-1]) if hasattr(np, 'trapezoid') else np.trapz(precision_curve[::-1], recall_curve[::-1])
     plt.figure(figsize=(8, 6))
-    plt.plot(recall, precision, marker='.', label='Student Transformer')
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title('Precision-Recall Curve')
-    plt.legend()
-    plt.savefig('static/precision_recall_curve.png')
+    plt.plot(recall_curve, precision_curve, color='#2196F3', linewidth=2, label=f'Student Transformer (AUC={auc_pr:.3f})')
+    plt.fill_between(recall_curve, precision_curve, alpha=0.1, color='#2196F3')
+    plt.xlabel('Recall', fontsize=13)
+    plt.ylabel('Precision', fontsize=13)
+    plt.title('Precision-Recall Curve — Hybrid Transformer (IEEE)', fontsize=14, fontweight='bold')
+    plt.legend(fontsize=11)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig('static/precision_recall_curve.png', dpi=150)
     print("Saved: static/precision_recall_curve.png")
+
+    # 3. Metrics Bar Chart (Accuracy, Precision, Recall, F1)
+    metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
+    values  = [acc_val, precision_val, recall_val, f1_val]
+    colors  = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0']
+
+    plt.figure(figsize=(9, 6))
+    bars = plt.bar(metrics, values, color=colors, edgecolor='white', linewidth=1.2, width=0.5)
+    for bar, val in zip(bars, values):
+        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
+                 f'{val:.4f}', ha='center', va='bottom', fontsize=13, fontweight='bold')
+    plt.ylim(0, 1.12)
+    plt.ylabel('Score', fontsize=13)
+    plt.title('Evaluation Metrics — Student Transformer (IEEE)', fontsize=14, fontweight='bold')
+    plt.grid(axis='y', alpha=0.3)
+    plt.tight_layout()
+    plt.savefig('static/metrics_bar_chart.png', dpi=150)
+    print("Saved: static/metrics_bar_chart.png")
+
+    # 4. ROC Curve
+    from sklearn.metrics import roc_curve, roc_auc_score
+    fpr, tpr, _ = roc_curve(y_true, y_probs)
+    auc_roc = roc_auc_score(y_true, y_probs)
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr, tpr, color='#E91E63', linewidth=2, label=f'ROC Curve (AUC = {auc_roc:.3f})')
+    plt.fill_between(fpr, tpr, alpha=0.1, color='#E91E63')
+    plt.plot([0, 1], [0, 1], 'k--', linewidth=1, label='Random Classifier')
+    plt.xlabel('False Positive Rate', fontsize=13)
+    plt.ylabel('True Positive Rate', fontsize=13)
+    plt.title('ROC Curve — Hybrid Transformer (IEEE)', fontsize=14, fontweight='bold')
+    plt.legend(fontsize=11)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig('static/roc_curve.png', dpi=150)
+    print("Saved: static/roc_curve.png")
+
     print("="*40)
 
 if __name__ == "__main__":
